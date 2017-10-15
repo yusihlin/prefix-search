@@ -6,7 +6,7 @@
 #include "tst.h"
 
 /** constants insert, delete, max word(s) & stack nodes */
-enum { INS, DEL, WRDMAX = 256, STKMAX = 512, LMAX = 1024 };
+enum { INS, DEL, WRDMAX = 256, STKMAX = 512, LMAX = 1024, CITYMAX = 260000 };
 #define REF INS
 #define CPY DEL
 
@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 {
     char word[WRDMAX] = "";
     char *sgl[LMAX] = {NULL};
+    char (*city_space)[WRDMAX] = malloc(sizeof *city_space * CITYMAX);
     tst_node *root = NULL, *res = NULL;
     int rtn = 0, idx = 0, sidx = 0;
     FILE *fp = fopen(IN_FILE, "r");
@@ -49,8 +50,8 @@ int main(int argc, char **argv)
     }
 
     t1 = tvgetf();
-    while ((rtn = fscanf(fp, "%s", word)) != EOF) {
-        char *p = word;
+    while ((rtn = fscanf(fp, "%s", city_space[idx])) != EOF) {
+        char *p = city_space[idx];
         /* FIXME: insert reference to each string */
         if (!tst_ins_del(&root, &p, INS, REF)) {
             fprintf(stderr, "error: memory exhausted, tst_insert.\n");
@@ -59,6 +60,7 @@ int main(int argc, char **argv)
         }
         idx++;
     }
+
     t2 = tvgetf();
 
     fclose(fp);
@@ -79,12 +81,12 @@ int main(int argc, char **argv)
             char *p = NULL;
         case 'a':
             printf("enter word to add: ");
-            if (!fgets(word, sizeof word, stdin)) {
+            if (!fgets(city_space[idx], sizeof city_space[idx], stdin)) {
                 fprintf(stderr, "error: insufficient input.\n");
                 break;
             }
-            rmcrlf(word);
-            p = word;
+            rmcrlf(city_space[idx]);
+            p = city_space[idx];
             t1 = tvgetf();
             /* FIXME: insert reference to each string */
             res = tst_ins_del(&root, &p, INS, REF);
@@ -150,6 +152,7 @@ int main(int argc, char **argv)
             break;
         case 'q':
             tst_free(root);
+            free(city_space);
             return 0;
             break;
         default:
