@@ -50,8 +50,12 @@ bench:
 	perf stat --repeat 100 \
                 -e cache-misses,cache-references,instructions,cycles \
                 sudo chrt -f 99 taskset -c 0 ./test_ref --bench
+plot:
+	gnuplot scripts/load_time.gp
+	gnuplot scripts/search_time.gp
+
 clean:
 	$(RM) $(TESTS) $(OBJS)
 	$(RM) $(deps)
-	$(RM) bench_load_cpy.txt bench_load_ref.txt bench_search_cpy.txt bench_search_ref.txt
+	$(RM) bench_load_cpy.txt bench_load_ref.txt bench_search_cpy.txt bench_search_ref.txt *.png *.dat fit.log
 -include $(deps)
