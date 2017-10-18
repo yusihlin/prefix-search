@@ -7,7 +7,7 @@
 #include "bench.h"
 
 /** constants insert, delete, max word(s) & stack nodes */
-enum { INS, DEL, WRDMAX = 256, STKMAX = 512, LMAX = 1024, CITYMAX = 260000 };
+enum { INS, DEL, WRDMAX = 256, STKMAX = 512, LMAX = 1024, CircularBufferSize = 3000000 };
 #define REF INS
 #define CPY DEL
 
@@ -23,24 +23,53 @@ static void rmcrlf(char *s)
 #define BENCH_LOAD_OUT "bench_load_ref.txt"
 #define BENCH_SEARCH_OUT "bench_search_ref.txt"
 
+// Circular buffer object
+typedef struct {
+    int size; // maximum number of elements
+    int start; // index of oldest element
+    unsigned int end; // index at which to write new element
+    char *elems; // vector of elements
+} CircularBuffer;
+
+void cbInit(CircularBuffer *cb, int size)
+{
+    cb->size = size;
+    cb->start = 0;
+    cb->end = 0;
+    cb->elems = (char *)calloc(cb->size, sizeof(char));
+}
+/*
+int cbIsFull(CircularBuffer *cb) {
+    return cb->end == ((cb->start ^ cb->size) -1); // This inverts the most significant bit of start before comparison
+}
+
+int cbIsEmpty(CircularBuffer *cb) {
+    return cb->end == cb->start;
+}
+*/
 int main(int argc, char **argv)
 {
     char word[WRDMAX] = "";
     char *sgl[LMAX] = {NULL};
-    char (*city_space)[WRDMAX] = malloc(sizeof *city_space * CITYMAX);
     tst_node *root = NULL, *res = NULL;
     int rtn = 0, idx = 0, sidx = 0;
     FILE *fp = fopen(IN_FILE, "r");
     double t1, t2;
-
+    CircularBuffer buffer;
+    cbInit(&buffer, CircularBufferSize);
+    char *buffer_head = buffer.elems;
     if (!fp) { /* prompt, open, validate file for reading */
         fprintf(stderr, "error: file open failed '%s'.\n", argv[1]);
         return 1;
     }
+    /* start store from the middle */
+    buffer.start = CircularBufferSize >> 1;
+    buffer.end = CircularBufferSize >> 1;
+    buffer_head += (CircularBufferSize >> 1);
 
     t1 = tvgetf();
-    while ((rtn = fscanf(fp, "%s", city_space[idx])) != EOF) {
-        char *p = city_space[idx];
+    while ((rtn = fscanf(fp, "%s", buffer_head)) != EOF) {
+        char *p = buffer_head;
         /* FIXME: insert reference to each string */
         if (!tst_ins_del(&root, &p, INS, REF)) {
             fprintf(stderr, "error: memory exhausted, tst_insert.\n");
@@ -48,6 +77,18 @@ int main(int argc, char **argv)
             return 1;
         }
         idx++;
+        int word_len = strlen(buffer_head) + 1;
+        if( WRDMAX + buffer.end >= CircularBufferSize) {
+            buffer_head -= buffer.end;
+            buffer.end = 0;
+        } else {
+            buffer.end = word_len + buffer.end;
+            /*
+            if (cbIsFull(&buffer)) // full, overwrite moves start pointer
+                buffer.start = CircularBufferSize >> 1;
+            */
+            buffer_head += word_len;
+        }
     }
 
     t2 = tvgetf();
@@ -67,7 +108,7 @@ int main(int argc, char **argv)
         /* build searching time txt */
         int r = bench_test(root, BENCH_SEARCH_OUT, sgl, &sidx, LMAX);
         tst_free(root);
-        free(city_space);
+        free(buffer.elems);
         return r;
     }
 
@@ -86,12 +127,12 @@ int main(int argc, char **argv)
             char *p = NULL;
         case 'a':
             printf("enter word to add: ");
-            if (!fgets(city_space[idx], sizeof city_space[idx], stdin)) {
+            if (!fgets(buffer_head, sizeof buffer_head, stdin)) {
                 fprintf(stderr, "error: insufficient input.\n");
                 break;
             }
-            rmcrlf(city_space[idx]);
-            p = city_space[idx];
+            rmcrlf(buffer_head);
+            p = buffer_head;
             t1 = tvgetf();
             /* FIXME: insert reference to each string */
             res = tst_ins_del(&root, &p, INS, REF);
@@ -157,7 +198,7 @@ int main(int argc, char **argv)
             break;
         case 'q':
             tst_free(root);
-            free(city_space);
+            free(buffer.elems);
             return 0;
             break;
         default:
