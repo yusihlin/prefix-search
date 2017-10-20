@@ -38,15 +38,7 @@ void cbInit(CircularBuffer *cb, int size)
     cb->end = 0;
     cb->elems = (char *)calloc(cb->size, sizeof(char));
 }
-/*
-int cbIsFull(CircularBuffer *cb) {
-    return cb->end == ((cb->start ^ cb->size) -1); // This inverts the most significant bit of start before comparison
-}
 
-int cbIsEmpty(CircularBuffer *cb) {
-    return cb->end == cb->start;
-}
-*/
 int main(int argc, char **argv)
 {
     char word[WRDMAX] = "";
@@ -78,15 +70,11 @@ int main(int argc, char **argv)
         }
         idx++;
         int word_len = strlen(buffer_head) + 1;
-        if( WRDMAX + buffer.end >= CircularBufferSize) {
+        if( (WRDMAX + buffer.end) >= CircularBufferSize) {
             buffer_head -= buffer.end;
             buffer.end = 0;
         } else {
             buffer.end = word_len + buffer.end;
-            /*
-            if (cbIsFull(&buffer)) // full, overwrite moves start pointer
-                buffer.start = CircularBufferSize >> 1;
-            */
             buffer_head += word_len;
         }
     }
