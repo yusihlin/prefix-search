@@ -70,7 +70,7 @@ int main(int argc, char **argv)
         }
         idx++;
         int word_len = strlen(buffer_head) + 1;
-        if( (WRDMAX + buffer.end) >= CircularBufferSize) {
+        if ((WRDMAX + buffer.end) >= CircularBufferSize) {
             buffer_head -= buffer.end;
             buffer.end = 0;
         } else {
